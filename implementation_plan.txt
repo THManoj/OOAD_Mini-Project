@@ -1,0 +1,151 @@
+Below is a copy‑and‑paste‑ready implementation plan for a **pure Java** (no Spring Boot, no REST) MVC blog application with GUI (Swing) and four GoF design patterns: Adapter, Facade, Proxy, Flyweight.  
+
+This plan covers:
+
+- Project structure  
+- Data models & in‑memory storage  
+- MVC layer responsibilities  
+- Swing‑based GUI  
+- Where and how to implement each design pattern  
+- Exception handling & validation  
+- Step‑by‑step development flow  
+
+---
+
+## 📁 Project Structure
+
+```
+com.example.blog
+├── App.java
+├── model
+│   ├── User.java
+│   ├── Role.java
+│   ├── Post.java
+│   ├── Comment.java
+│   ├── Tag.java
+│   └── Category.java
+├── repository
+│   └── InMemoryStore.java
+├── controller
+│   ├── AuthController.java
+│   ├── UserController.java
+│   ├── PostController.java
+│   └── CommentController.java
+├── service
+│   ├── AuthService.java
+│   ├── UserService.java
+│   ├── PostService.java
+│   ├── CommentService.java
+│   └── LikeService.java
+├── view
+│   ├── LoginView.java
+│   ├── MainView.java
+│   ├── UserManagementView.java
+│   ├── PostManagementView.java
+│   └── CommentView.java
+├── util
+│   └── NotificationFacade.java
+└── exception
+    ├── AppException.java
+    └── GlobalExceptionHandler.java
+```
+
+---
+
+## 🗄️ Data Models & In‑Memory Storage
+
+- **User**: `username`, `password`, `roles: Set<Role>`  
+- **Role** (enum): `ADMIN, AUTHOR, READER`  
+- **Post**: `id`, `title`, `content`, `author`, `status (DRAFT/PUBLISHED)`, `tags: Set<Tag>`, `categories: Set<Category>`, `createdAt`  
+- **Comment**: `id`, `postId`, `author`, `text`, `timestamp`  
+- **Tag/Category**: immutable value objects, shared via factory (Flyweight) citeturn0search4turn0search9  
+- **InMemoryStore**: singleton holding  
+  - `Map<String,User> users`  
+  - `Map<Long,Post> posts`  
+  - `Map<Long,Comment> comments`  
+  - `Map<Long,Set<String>> likes`  
+
+---
+
+## 🏗️ MVC Layer Implementation
+
+### Model
+Plain Java classes (POJOs) with getters/setters—no framework annotations citeturn0search0.
+
+### View
+Swing windows/panels for login, dashboards, forms. Each view communicates with its controller via listener interfaces citeturn0search15.
+
+### Controller
+- Mediates between view events and service calls  
+- E.g., `LoginView` fires “login” event → `AuthController.login(username, password)` → updates view on success/failure citeturn0search0.
+
+### Service
+- Business logic manipulating POJOs in `InMemoryStore`  
+- Enforce role checks via simple `if (currentUser.hasRole(...))` blocks  
+
+---
+
+## 🖥️ GUI Implementation Using Swing
+
+1. **LoginView.java**  
+   - `JFrame` with `JTextField username`, `JPasswordField password`, `JButton login`  
+2. **MainView.java**  
+   - `JTabbedPane` with tabs for Users, Posts, Comments  
+3. **UserManagementView.java**  
+   - `JTable` showing users; buttons for Add/Edit/Delete  
+4. **PostManagementView.java**  
+   - Form for title/content, list for tags/categories (use `JList`), Publish/Draft toggle  
+5. **CommentView.java**  
+   - Nested comments display under selected post; form to add replies  
+   
+Use MVC by having each view hold only Swing components and delegate all actions to its controller via listener interfaces citeturn0search10.
+
+---
+
+## ⚙️ Design Patterns Implementation
+
+| Pattern    | Location & Purpose                                                                                                                          |
+|------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| **Adapter**| Wrap any legacy or third‑party utility (e.g., password hashing) behind a simple interface. Create `PasswordHasherAdapter` that implements your `Hasher` interface citeturn0search1turn0search16. |
+| **Facade** | `NotificationFacade` in `util/` offers methods like `notifyCommentReply(parent, reply)` hiding complex Swing dialog creation or email hooks citeturn0search2turn0search7.             |
+| **Proxy**  | Use a `CommentProxy` that implements `CommentService` interface; before mutating a comment it checks `if (currentUser.equals(comment.getAuthor()))` citeturn0search3turn0search8.            |
+| **Flyweight**| Manage shared `Tag`/`Category` instances through a factory in `InMemoryStore`: `getTag(name)` returns existing object or creates one citeturn0search4turn0search9.                             |
+
+---
+
+## 🚨 Exception Handling & Validation
+
+- **GlobalExceptionHandler.java**  
+  - Catches `AppException` (custom), shows `JOptionPane` error dialogs  
+- **Validation**  
+  - Use simple Java checks and throw `InvalidInputException` for empty titles, too‑long comments, etc.  
+
+---
+
+## 🛠️ Development Steps
+
+1. **Bootstrap App.java**  
+   - Initialize `InMemoryStore` with default admin user  
+   - Launch `LoginView`  
+2. **Implement Models & Store**  
+   - Create POJOs + `InMemoryStore` singleton  
+3. **Build Controllers & Services**  
+   - `AuthService`/`AuthController` → login logic  
+   - `UserService`/`UserController` → CRUD users  
+   - `PostService`/`PostController` → CRUD posts, search, pagination  
+   - `CommentService` + `CommentProxy` → CRUD comments, proxy checks  
+   - `LikeService` → toggle likes  
+4. **Wire Swing Views**  
+   - Create view classes; inject corresponding controller in constructor  
+   - Register listeners to delegate actions  
+5. **Add Design Patterns**  
+   - Adapter: wrap hashing library  
+   - Facade: centralize notifications  
+   - Proxy: enforce comment ownership  
+   - Flyweight: share tag/category objects  
+6. **Global Exception Handling**  
+   - Catch and display errors via `JOptionPane` in `GlobalExceptionHandler`  
+
+---
+
+Copy this plan in one go into your IDE or GitHub Copilot prompt. It clearly separates concerns, follows MVC, and highlights exactly where each design pattern sits. Enjoy building!
